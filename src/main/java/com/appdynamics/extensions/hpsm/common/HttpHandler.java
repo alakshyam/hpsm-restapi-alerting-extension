@@ -1,0 +1,301 @@
+package com.appdynamics.extensions.hpsm.common;
+
+import com.appdynamics.TaskInputArgs;
+import com.appdynamics.extensions.crypto.CryptoUtil;
+import com.appdynamics.extensions.http.Http4ClientBuilder;
+import com.appdynamics.extensions.hpsm.common.FileSystemStore;
+import com.appdynamics.extensions.hpsm.api.Alert;
+import com.appdynamics.extensions.hpsm.api.AlertBuilder;
+import com.appdynamics.extensions.hpsm.api.DataParsingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.http.auth.AuthSchemeProvider;
+import org.apache.http.client.config.AuthSchemes;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.config.Registry;
+import org.apache.http.config.RegistryBuilder;
+import org.apache.http.conn.socket.ConnectionSocketFactory;
+import org.apache.http.conn.socket.PlainConnectionSocketFactory;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.conn.ssl.SSLContextBuilder;
+import org.apache.http.conn.ssl.TrustStrategy;
+import org.apache.http.conn.ssl.X509HostnameVerifier;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.auth.BasicSchemeFactory;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.util.EntityUtils;
+import org.apache.log4j.Logger;
+
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.SSLContext;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+public class HttpHandler {
+
+	public static final String FORWARD_SLASH = "/";
+	public static final String CREATE = "create";
+	public static final String UPDATE = "action"+FORWARD_SLASH+"update";
+	public static final String CLOSE = "action"+FORWARD_SLASH+"close";
+	
+	private CloseableHttpClient httpClient;
+
+    private final Configuration config;
+    private static Logger logger = Logger.getLogger(HttpHandler.class);
+
+    public HttpHandler(Configuration config) {
+        this.config = config;
+        setupHttpClient();
+    }
+    
+    /**
+     * Posts the data to HPSM.
+     *
+     * @param alert
+     * @param incidentID
+     */
+    public boolean postAlert(Alert alert, String incidentID) {
+    	
+    	String payload;
+        try {
+            payload = AlertBuilder.convertIntoString(alert, config);
+            logger.debug("String posting to HPSM ::" + payload);
+        } catch (DataParsingException e) {
+            logger.error("Cannot parse object", e);
+            return false;
+        }
+
+        try {
+            String targetUrl = buildTargetUrl();
+            logger.debug("Posting data to HPSM at " + targetUrl);
+            HttpPost post = new HttpPost(targetUrl);
+
+            post.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
+            post.addHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON);
+            post.setEntity(new StringEntity(payload));
+            CloseableHttpResponse response = httpClient.execute(post);
+            
+            int status = response.getStatusLine().getStatusCode();
+            String responseString = EntityUtils.toString(response.getEntity());
+            
+            if (status == HttpURLConnection.HTTP_OK || status == HttpURLConnection.HTTP_CREATED) {
+                logger.info("Data successfully posted to HPSM ");
+                logger.debug("HPSM response " + responseString);
+                String sys_id = null;
+                ObjectMapper mapper = new ObjectMapper();
+                JsonNode root = mapper.readTree(responseString);
+                JsonNode result = root.path("Incident");
+                sys_id = result.path("IncidentID").asText();
+                logger.info("Incident ID created is "+sys_id);
+                FileSystemStore.INSTANCE.putInStore(incidentID, sys_id);
+                String hpsmSysId = FileSystemStore.INSTANCE.getFromStore(incidentID);
+                return true;
+            }
+            logger.error("Data post to HPSM failed with status " + status + " and error message[" + responseString + "]");
+        }
+        catch (IOException e) {
+            logger.error("Error while posting data to HPSM", e);
+        } finally {
+            if (httpClient != null) {
+                try {
+                    httpClient.close();
+                } catch (IOException e) {
+                    logger.error("Error while closing the HttpClient", e);
+                }
+            }
+        }
+        return false;
+    }
+    
+    public boolean updateAlert(Alert alert, String incidentId, boolean closeEvent, boolean resolveEvent) {
+    	 String payload;
+         try {
+        	 payload = AlertBuilder.convertIntoUpdateString(alert, config, incidentId, closeEvent, resolveEvent);
+        	 logger.debug("String posting to HPSM ::" + payload);
+         } catch (DataParsingException e) {
+             logger.error("Cannot parse object", e);
+             return false;
+         }
+         
+         try{
+        	 String targetUrl = buildTargetUrlForUpdate(incidentId, closeEvent);
+        	 logger.debug("Posting data to HPSM at " + targetUrl);
+        	 CloseableHttpResponse response = null;
+        	 
+        	 HttpPut put = new HttpPut(targetUrl);
+             put.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
+             put.addHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON);
+
+             put.setEntity(new StringEntity(payload));
+             response = httpClient.execute(put);
+             
+             int status = response.getStatusLine().getStatusCode();
+             String responseString = EntityUtils.toString(response.getEntity());
+
+             if (status == HttpURLConnection.HTTP_OK || status == HttpURLConnection.HTTP_CREATED) {
+                 logger.info("Data successfully posted to HPSM ");
+                 
+                 logger.debug("HPSM response " + responseString);
+                 if (closeEvent) {
+                     FileSystemStore.INSTANCE.removeFromStore(incidentId);
+                     logger.info("Incident ID closed is "+incidentId);
+                 }
+                 else
+                	 logger.info("Incident ID updated is "+incidentId);
+
+                 return true;
+             }
+             logger.error("Data post to HPSM failed with status " + status + " and error message[" + responseString + "]");
+         } catch (IOException e) {
+             logger.error("Error while posting data to HPSM", e);
+         } finally {
+             if (httpClient != null) {
+                 try {
+                     httpClient.close();
+                 } catch (IOException e) {
+                     logger.error("Error while closing the HttpClient", e);
+                 }
+             }
+         }
+         return false;
+    }
+    
+    private void setupHttpClient() {
+
+        Map map = createHttpConfigMap();
+
+
+        //Workaround to ignore the certificate mismatch issue.
+        SSLContext sslContext = null;
+        try {
+            sslContext = new SSLContextBuilder().loadTrustMaterial(null, new TrustStrategy() {
+                public boolean isTrusted(X509Certificate[] arg0, String arg1) throws CertificateException {
+                    return true;
+                }
+            }).build();
+        } catch (NoSuchAlgorithmException e) {
+            logger.error("Unable to create SSL context", e);
+            throw new RuntimeException("Unable to create SSL context", e);
+        } catch (KeyManagementException e) {
+            logger.error("Unable to create SSL context", e);
+            throw new RuntimeException("Unable to create SSL context", e);
+            
+        } catch (KeyStoreException e) {
+            logger.error("Unable to create SSL context", e);
+            throw new RuntimeException("Unable to create SSL context", e);
+        }
+        HostnameVerifier hostnameVerifier = SSLConnectionSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER;
+
+        SSLConnectionSocketFactory sslSocketFactory = new SSLConnectionSocketFactory(sslContext, (X509HostnameVerifier) hostnameVerifier);
+        Registry<ConnectionSocketFactory> socketFactoryRegistry = RegistryBuilder.<ConnectionSocketFactory>create()
+                .register("http", PlainConnectionSocketFactory.getSocketFactory())
+                .register("https", sslSocketFactory)
+                .build();
+
+        PoolingHttpClientConnectionManager connMgr = new PoolingHttpClientConnectionManager(socketFactoryRegistry);
+
+        HttpClientBuilder builder = Http4ClientBuilder.getBuilder(map);
+        builder.setConnectionManager(connMgr);
+
+        builder.setSSLSocketFactory(sslSocketFactory);
+
+        //Keeping only Basic auth
+        Registry<AuthSchemeProvider> r = RegistryBuilder.<AuthSchemeProvider>create()
+                .register(AuthSchemes.BASIC, new BasicSchemeFactory())
+                .build();
+
+        builder.setDefaultAuthSchemeRegistry(r);
+        
+        httpClient = builder.build();
+    }
+    
+    private Map<String, String> createHttpConfigMap() {
+    
+    	Map map = new HashMap();
+
+        List<Map<String, String>> list = new ArrayList<Map<String, String>>();
+        map.put("servers", list);
+        HashMap<String, String> server = new HashMap<String, String>();
+        server.put("uri",config.getUrl());
+        if (config.getUsername() != null && config.getUsername().length() > 0) {
+            server.put("username", config.getUsername());
+            server.put("password", getPassword());
+        }
+        list.add(server);
+        
+        if(config.getProxyUri() == null){
+        	//HashMap<String, String> proxyProps = new HashMap<String, String>();
+		    map.put("proxy", null);
+        }
+        else {
+        	HashMap<String, String> proxyProps = new HashMap<String, String>();
+		    map.put("proxy", proxyProps);
+		    proxyProps.put("uri", config.getProxyUri());
+		    proxyProps.put("username", config.getProxyUser());
+		    proxyProps.put("password", config.getProxyPassword());
+        }
+        return map;
+    }
+    
+    private String getPassword() {
+
+        String password = config.getPassword();
+
+        Map<String, String> map = new HashMap<String, String>();
+
+        if (password != null) {
+            logger.debug("Using provided password");
+            map.put(TaskInputArgs.PASSWORD, password);
+        }
+
+        String passwordEncrypted = config.getPasswordEncrypted();
+        if (passwordEncrypted != null) {
+            logger.debug("Using provided passwordEncrypted");
+            map.put(TaskInputArgs.PASSWORD_ENCRYPTED, passwordEncrypted);
+            map.put(TaskInputArgs.ENCRYPTION_KEY, config.getEncryptionKey());
+        }
+
+        String plainPassword = CryptoUtil.getPassword(map);
+
+        return plainPassword;
+    }
+    
+    private String buildTargetUrl() {
+    	StringBuilder sb = new StringBuilder();
+    	
+    	sb.append(config.getUrl());
+    	//sb.append(FORWARD_SLASH).append(CREATE);
+    	
+    	return sb.toString();
+    }
+    
+    private String buildTargetUrlForUpdate(String incidentId, boolean closeEvent){
+    	StringBuilder sb = new StringBuilder();
+    	
+    	sb.append(config.getUrl());
+    	
+    	if(closeEvent == true){
+    		sb.append(FORWARD_SLASH).append(incidentId).append(FORWARD_SLASH).append(CLOSE);
+    	}
+    	else{
+    		sb.append(FORWARD_SLASH).append(incidentId).append(FORWARD_SLASH).append(UPDATE);
+    	}
+    	
+    	return sb.toString();
+    }
+}

@@ -1,0 +1,63 @@
+#HPSM Rest URL
+url: "http://<Hostname>:<Rest Port>/SM/9/rest/incidents"
+
+#HPSM Rest User (Basic Authentication)
+username: "UserName"
+
+#HPSM Password, provide password or passwordEncrypted and encryptionKey.
+password:
+
+passwordEncrypted: "EncryptedPassword"
+encryptionKey: "KEY"
+
+#HPSM Version
+hpsmVersion: "9.41"
+
+#Close notes text to be posted when resolving the incident
+closeNotesText: "This incident is resolved"
+
+#Proxy server URI
+proxyUri:
+#Proxy server user name
+proxyUser:
+#Proxy server password
+proxyPassword:
+
+#HPSM User Specific
+#Please define your HPSM specific fields here like AssignmentGroup, Assignee, Area, Category and Company.
+#The name should be a valid Incident table's column name.
+#Do not add properties Title, Description, JournalUpdates, Impact and Urgency here, as they are added by the extension automatically
+fields:
+   - name: "AssignmentGroup"
+     value: "Service Desk"
+   - name: "Assignee"
+     value: "Test.User"
+   - name: "Area"
+     value: "Automated Ticketing"
+   - name: "Company"
+     value: "AppDynamics"
+   - name: "Category"
+     value: "incident"
+
+#HPSM service mapping to AppDynamics Applications
+#Name is AppDynamics Application Name, Value is corresponding HPSM Service CI
+#Keep a default value of CI if you have so and remove all other mappings
+services:
+   - name: "App1"
+     value: "CI10002"
+   - name: "App2"
+     value: "CI10003"
+   - name: "App3"
+     value: "CI10004"
+   - name: "App4"
+     value: "CI10005"
+   - name: "App5"
+     value: "CI10006"
+   - name: "App6"
+     value: "CI10007"
+   - name: "App7"
+     value: "CI10008"
+   - name: "App8"
+     value: "CI10009"
+   - name: "DEFAULT"
+     value: "CI10001"
