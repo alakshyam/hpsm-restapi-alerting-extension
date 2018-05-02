@@ -44,7 +44,7 @@ To post events to HPSM an Operator User should have restful capability. For deta
       ```
       Uncomment the appropriate executable tag based on windows or linux/unix machine.
 
-    5. Update the config.yaml file in <CONTROLLER_HOME_DIR>/custom/actions/hpsm-restapi-alert/conf/ directory with the domain, username, password and HPSMVersion. You can also configure the default HPSM fields like AssignmentGroup, Assignee, Area, company, category. The services mapping is provided for applications in AppDynamics. If there is no specific service mapping, use default service value.
+    5. Update the config.yaml file in <CONTROLLER_HOME_DIR>/custom/actions/hpsm-restapi-alert/conf/ directory with the rest URL, username, password and HPSMVersion. The rest url is different from SOAP URL for HP Service Manager and is new addition. This integration is compatible only with Rest URL. You can also configure the default HPSM fields like AssignmentGroup, Assignee, Area, company, category. The services mapping is provided for applications in AppDynamics. If there is no specific service mapping, use default service value.
 
  6. Check if the version of java in your environment is 1.8 and above. If not download the latest 1.8 Java and provide the path in the hpsm-alert.bat/hpsm-alert.sh as applicable 
 
