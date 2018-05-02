@@ -158,7 +158,7 @@ Close Ticket
 
 
 ## Support
-For any questions or feature request, please contact [Alakshya M](mailto:alakshya.m@gmail.com).
+For any questions or changes or feature request, please contact [Alakshya M](mailto:alakshya.m@gmail.com).
 
 ### Note: 
 This alerting extension is based on the existing https://github.com/Appdynamics/servicenow-api-alerting-extension. Thanks to the authors of the extension!
