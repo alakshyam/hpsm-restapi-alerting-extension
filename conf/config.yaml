@@ -26,10 +26,10 @@ proxyPassword:
 #HPSM User Specific
 #Please define your HPSM specific fields here like AssignmentGroup, Assignee, Area, Category and Company.
 #The name should be a valid Incident table's column name.
-#Do not add properties Title, Description, JournalUpdates, Impact and Urgency here, as they are added by the extension automatically
+#Do not add properties Title, Description, JournalUpdates, Impact and Urgency here, as they are added by the extension automatically.
+#Add AssignmentGroup and Service if there is a default here. 
+#If you have mapping of service and assignment group to AppD applications, then add them to CSV file and provide path in applicationFieldMapping
 fields:
-   - name: "AssignmentGroup"
-     value: "Service Desk"
    - name: "Assignee"
      value: "Test.User"
    - name: "Area"
@@ -39,25 +39,5 @@ fields:
    - name: "Category"
      value: "incident"
 
-#HPSM service mapping to AppDynamics Applications
-#Name is AppDynamics Application Name, Value is corresponding HPSM Service CI
-#Keep a default value of CI if you have so and remove all other mappings
-services:
-   - name: "App1"
-     value: "CI10002"
-   - name: "App2"
-     value: "CI10003"
-   - name: "App3"
-     value: "CI10004"
-   - name: "App4"
-     value: "CI10005"
-   - name: "App5"
-     value: "CI10006"
-   - name: "App6"
-     value: "CI10007"
-   - name: "App7"
-     value: "CI10008"
-   - name: "App8"
-     value: "CI10009"
-   - name: "DEFAULT"
-     value: "CI10001"
+#If you have application specific field mappings, such as service or AssignmentGroup, provide the filename. If not leave blank.
+applicationFieldMapping: "appFields.csv"

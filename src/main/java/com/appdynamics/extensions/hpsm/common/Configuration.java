@@ -15,10 +15,9 @@ public class Configuration {
 	private String proxyUser;
 	private String proxyPassword;
 	private String closeNotesText;
-
+	private String applicationFieldMapping;
+	
     private List<Field> fields = new ArrayList<Field>();
-    
-    private List<Service> services = new ArrayList<Service>();
     
     public String getUrl() {
 		return url;
@@ -109,12 +108,12 @@ public class Configuration {
         this.closeNotesText = closeNotesText;
     }
 
-    public List<Service> getServices() {
-		return services;
+    public String getApplicationFieldMapping() {
+		return applicationFieldMapping;
 	}
 
-	public void setServices(List<Service> services) {
-		this.services = services;
+	public void setApplicationFieldMapping(String applicationFieldMapping) {
+		this.applicationFieldMapping = applicationFieldMapping;
 	}
     
     

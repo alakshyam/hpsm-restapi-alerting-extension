@@ -44,7 +44,7 @@ To post events to HPSM an Operator User should have restful capability. For deta
       ```
       Uncomment the appropriate executable tag based on windows or linux/unix machine.
 
-    5. Update the config.yaml file in <CONTROLLER_HOME_DIR>/custom/actions/hpsm-restapi-alert/conf/ directory with the rest URL, username, password and HPSMVersion. The rest url is different from SOAP URL for HP Service Manager and is new addition. This integration is compatible only with Rest URL. You can also configure the default HPSM fields like AssignmentGroup, Assignee, Area, company, category. The services mapping is provided for applications in AppDynamics. If there is no specific service mapping, use default service value.
+    5. Update the config.yaml file in <CONTROLLER_HOME_DIR>/custom/actions/hpsm-restapi-alert/conf/ directory with the rest URL, username, password and HPSMVersion. The rest url is different from SOAP URL for HP Service Manager and is new addition. This integration is compatible only with Rest URL. You can also configure the default HPSM fields like AssignmentGroup, Assignee, Area, company, category. If you have specific fields in HPSM which have values dependent on AppDynamics Applications such AssignmentGroup, Service, etc, then create a mapping csv file and place it in conf folder. Mention the csv file path name in config.yaml. The csv file should have the first column as Application. There should not be duplicate column names in the csv file.
 
  6. Check if the version of java in your environment is 1.8 and above. If not download the latest 1.8 Java and provide the path in the hpsm-alert.bat/hpsm-alert.sh as applicable 
 
@@ -81,7 +81,8 @@ Please make sure to not use tab (\t) while editing yaml files. You may want to v
 	#HPSM User Specific
 	#Please define your HPSM specific fields here like AssignmentGroup, Assignee, Area, Category and Company.
 	#The name should be a valid Incident table's column name.
-	#Do not add properties Title, Description, JournalUpdates, Impact and Urgency here, as they are added by the extension automatically
+	#Do not add properties Title, Description, JournalUpdates, Impact and Urgency here, as they are added by the extension automatically.
+	#If you have mapping of service and assignment group to AppD applications, then add them to CSV file and provide path in applicationFieldMapping
 	fields:
 	   - name: "AssignmentGroup"
 	     value: "Service Desk"
@@ -94,28 +95,8 @@ Please make sure to not use tab (\t) while editing yaml files. You may want to v
 	   - name: "Category"
 	     value: "incident"
 	
-	#HPSM service mapping to AppDynamics Applications
-	#Name is AppDynamics Application, Value is corresponding HPSM Service CI
-	#Keep a default value of CI if you have so and remove all other mappings
-	services:
-	   - name: "AppdAppName1"
-	     value: "CI16108"
-	   - name: "AppdAppName2"
-	     value: "CI15448"
-	   - name: "AppdAppName3"
-	     value: "CI16107"
-	   - name: "AppdAppName4"
-	     value: "CI17290"
-	   - name: "AppdAppName5"
-	     value: "CI17291"
-	   - name: "AppdAppName6"
-	     value: "CI17048"
-	   - name: "AppdAppName7"
-	     value: "CI16106"
-	   - name: "AppdAppName8"
-	     value: "CI16099"
-	   - name: "DEFAULT"
-	     value: "CI16108"
+	#If you have application specific field mappings, such as service or AssignmentGroup, provide the filename. If not leave blank.
+	applicationFieldMapping: "appFields.csv"
 
 ```
 

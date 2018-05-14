@@ -2,19 +2,24 @@ package com.appdynamics.extensions.hpsm;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+
+import org.apache.log4j.Logger;
+
 import com.appdynamics.extensions.alerts.customevents.EventSummary;
 import com.appdynamics.extensions.alerts.customevents.OtherEvent;
 import com.appdynamics.extensions.hpsm.api.Alert;
+import com.appdynamics.extensions.hpsm.common.ApplicationFieldMap;
 import com.appdynamics.extensions.hpsm.common.Configuration;
 import com.appdynamics.extensions.hpsm.common.Field;
 import com.appdynamics.extensions.hpsm.common.HttpHandler;
-import com.appdynamics.extensions.hpsm.common.Service;
 
 public class OtherEventsExtension {
 
 	private static final String NEW_LINE = "\n";
     private static final String SPACE = " ";
     private Configuration config;
+    private static Logger logger = Logger.getLogger(OtherEventsExtension.class);
     
     public OtherEventsExtension(Configuration config){
     	this.config = config;
@@ -50,25 +55,18 @@ public class OtherEventsExtension {
             }
         }
 
-        Boolean foundService = false;
-        Service defaultService = new Service();
-        List<Service> configServices = config.getServices();
-        if (configServices != null) {
-        	for (Service service : configServices){
-        		if (service.getName().contentEquals(otherEvent.getAppName())){
-        			alert.addDynamicProperties("Service", service.getValue());
-        			foundService = true;
-        		}
-        		if (service.getName().contentEquals("DEFAULT")){
-        			foundService = false;
-        			defaultService.setName("Service");
-        			defaultService.setValue(service.getValue());
-        		}
+        String csvFileName = config.getApplicationFieldMapping();
+        if(csvFileName.contentEquals("") == false){
+        	logger.debug("Read Mapping from the csv file "+csvFileName);
+        	ApplicationFieldMap applicationFieldMap = new ApplicationFieldMap(csvFileName);
+        	Map<String,String> fieldMap = applicationFieldMap.getRecord(otherEvent.getAppName());
+        	if (fieldMap != null){
+        		for(String fieldKey: fieldMap.keySet()){
+        			alert.addDynamicProperties(fieldKey, fieldMap.get(fieldKey));
+        			logger.debug("Mapping Keys "+fieldKey+" .. "+fieldMap.get(fieldKey));
+            	}
         	}
-        }
-        
-        if(foundService == false){
-        	alert.addDynamicProperties(defaultService.getName(), defaultService.getValue());
+        	
         }
         
         return alert;
