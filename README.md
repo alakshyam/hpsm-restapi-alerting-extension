@@ -84,8 +84,6 @@ Please make sure to not use tab (\t) while editing yaml files. You may want to v
 	#Do not add properties Title, Description, JournalUpdates, Impact and Urgency here, as they are added by the extension automatically.
 	#If you have mapping of service and assignment group to AppD applications, then add them to CSV file and provide path in applicationFieldMapping
 	fields:
-	   - name: "AssignmentGroup"
-	     value: "Service Desk"
 	   - name: "Assignee"
 	     value: "test.user"
 	   - name: "Area"
