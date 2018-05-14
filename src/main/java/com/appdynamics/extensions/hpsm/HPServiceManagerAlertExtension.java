@@ -14,7 +14,7 @@ import java.util.Arrays;
 public class HPServiceManagerAlertExtension {
 
 	private static Logger logger = Logger.getLogger(HPServiceManagerAlertExtension.class);
-    private static final String CONFIG_FILENAME = "." + File.separator + "conf" + File.separator + "config.yaml";
+    private static final String CONFIG_FILENAME = "." + File.separator + "conf" + File.separator + "config.yml";
     private Configuration config;
     
     final EventBuilder eventBuilder = new EventBuilder();
