@@ -101,7 +101,7 @@ public class HealthRuleViolationEventExtension {
         }
 
         String csvFileName = config.getApplicationFieldMapping();
-        if(csvFileName.contentEquals("") == false){
+        if(csvFileName != null || csvFileName.contentEquals("") == false){
         	logger.debug("Read Mapping from the csv file "+csvFileName);
         	ApplicationFieldMap applicationFieldMap = new ApplicationFieldMap(csvFileName);
         	Map<String,String> fieldMap = applicationFieldMap.getRecord(violationEvent.getAppName());
