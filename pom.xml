@@ -5,7 +5,7 @@
   	<modelVersion>4.0.0</modelVersion>
   	<groupId>com.appdynamics.extensions</groupId>
   	<artifactId>hpsm-restapi-alerting-extension</artifactId>
-  	<version>0.0.1-SNAPSHOT</version>
+  	<version>0.0.2-SNAPSHOT</version>
   	<name>hpsm-restapi-alerting-extension</name>
   	<description>HPSM alerting extension for AppDynamics</description>
 	<packaging>jar</packaging>
